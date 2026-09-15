@@ -1,7 +1,7 @@
 """
 导入流程配置管理模块
 
-集中管理所有配置项，支持环境变量覆盖
+集中管理导入流水线的文档处理、LLM、存储等配置项，支持环境变量覆盖
 """
 
 from dataclasses import dataclass, field
@@ -42,7 +42,7 @@ class ImportConfig:
         default_factory=lambda: os.getenv("ITEM_MODEL", "")
     )
     default_model: str = field(
-        default_factory=lambda: os.getenv("MODEL", "")
+        default_factory=lambda: os.getenv("LLM_DEFAULT_MODEL", "")
     )
 
     # ==================== Milvus 配置 ====================
@@ -55,10 +55,6 @@ class ImportConfig:
     item_name_collection: str = field(
         default_factory=lambda: os.getenv("ITEM_NAME_COLLECTION", "")
     )
-    entity_name_collection: str = field(
-        default_factory=lambda: os.getenv("ENTITY_NAME_COLLECTION", "")
-    )
-
 
     # ==================== MinIO 配置 ====================
     minio_endpoint: str = field(
@@ -75,11 +71,11 @@ class ImportConfig:
     )
     minio_secure: bool = False
 
-    # ==================== 向量配置 ====================
+    # ==================== 向量配置（纯稠密，见 docs/adr/0001） ====================
     embedding_dim: int = field(
         default_factory=lambda: int(os.getenv("EMBEDDING_DIM", "1024"))
     )
-    embedding_batch_size: int = 8
+    embedding_batch_size: int = 8  # 智谱 embeddings 单次批量上限
 
     # ==================== 速率限制 ====================
     requests_per_minute: int = 15  # 图片总结 API 速率限制
@@ -89,8 +85,8 @@ class ImportConfig:
         """从环境变量加载配置"""
         return cls()
 
-    # http://192.168.200.130:9000/
-    def get_minio_base_url(self):
+    def get_minio_base_url(self) -> str:
+        """获取 MinIO 对象访问基础 URL"""
         base_protocol = "https://" if self.minio_secure else "http://"
         return base_protocol + f"{self.minio_endpoint}"
 

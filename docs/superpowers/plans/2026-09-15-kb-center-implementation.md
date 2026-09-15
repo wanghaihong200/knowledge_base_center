@@ -86,12 +86,12 @@ tests/
 - Modify: `.gitignore`（追加 `.idea/`、`.playwright-mcp/`、`temp-files/`、`data/`、`__pycache__/`、`*.pyc`、`.pytest_cache/`）
 - Commit: 当前全部已有代码 + `CONTEXT.md` + `docs/adr/0001*.md` + 本计划文件
 
-- [ ] **Step 1**: 追加 .gitignore 条目（见上）
-- [ ] **Step 2**:
+- [x] **Step 1**: 追加 .gitignore 条目（见上）
+- [x] **Step 2**:
 ```bash
 git add -A && git commit -m "chore: 项目基线——骨架代码、Web层、文档与实施计划"
 ```
-- [ ] **Step 3**: `git status` 确认工作区干净、`.env` 未入库（`git ls-files | grep -c "\.env$"` 应为 0，`.env.example` 除外）
+- [x] **Step 3**: `git status` 确认工作区干净、`.env` 未入库（`git ls-files | grep -c "\.env$"` 应为 0，`.env.example` 除外）
 
 ---
 

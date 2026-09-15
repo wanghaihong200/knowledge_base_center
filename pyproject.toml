@@ -3,3 +3,11 @@ name = "knowledge-base-center"
 version = "0.1.0"
 requires-python = ">=3.11"
 dependencies = []
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "unit: 纯逻辑单元测试（mock 外部依赖）",
+    "integration: 集成测试（需 docker 服务可达，不可达自动跳过）",
+    "e2e: 端到端 API 测试（需服务已启动）",
+]
