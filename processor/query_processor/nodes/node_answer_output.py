@@ -1,4 +1,4 @@
-# processor/query_processor/nodes/g_node_answer_output.py
+"""答案输出节点：已有答案直通或 LLM 生成，写入历史并发送结束事件"""
 
 import re
 from typing import List, Dict, Tuple
@@ -229,7 +229,7 @@ class NodeAnswerOutput(NodeBase):
                 print(f"流式输出完成，总长度: {len(final_text)}")
 
             except Exception as e:
-                print(f"流式生成出错: {e}", exc_info=True)
+                print(f"流式生成出错: {e}")
                 # 发生错误时，尝试推送到前端
                 push_to_session(session_id, SSEEvent.ERROR, {"error": str(e)})
 
@@ -244,7 +244,7 @@ class NodeAnswerOutput(NodeBase):
                 set_task_result(session_id, "answer", content)
                 print(f"生成回答完成，长度: {len(content)}")
             except Exception as e:
-                print(f"生成回答出错: {e}", exc_info=True)
+                print(f"生成回答出错: {e}")
                 state["answer"] = "抱歉，生成回答时出现错误。"
 
         return state
@@ -341,70 +341,3 @@ class NodeAnswerOutput(NodeBase):
         return state
 
 
-if __name__ == "__main__":
-    print("开始测试: 答案生成节点")
-
-    # 1. 构造模拟数据
-    # 模拟重排序后的文档列表 (reranked_docs)
-    # 包含：本地文档（带Markdown图片）、联网结果（带URL字段）、纯文本文档
-    mock_reranked_docs = [
-        {
-            "chunk_id": "local_101",
-            "source": "local",
-            "title": "HAK 180 烫金机操作手册_v2",
-            "score": 0.95,
-            "url": None,
-            "content": """
-HAK 180 烫金机的操作面板位于机器正前方。
-开启电源后，您需要先设置温度，默认建议设置在 110℃ 左右。
-具体的操作面板布局请参考下图：
-![操作面板布局图](http://192.168.100.100:9000/knowledge-base/upload-images/hak180产品安全手册/048c005b198be5c9fff80ad6a6ba02496f38fa109ec20dbaabde3110f3eb1574.jpg)
-
-如果是进行局部烫金，请调节侧面的旋钮。
-![侧面旋钮细节](http://192.168.100.100:9000/knowledge-base/upload-images/hak180产品安全手册/f77da4df52517fc50b9efb528540e1351dd1a08dce6f801cf08366540f2c59ce.jpg)
-"""
-        },
-        {
-            "chunk_id": None,
-            "source": "web",
-            "title": "HAK 180 常见故障排除 - 官网",
-            "score": 0.88,
-            "url": "http://192.168.100.100:9000/knowledge-base/upload-images/%E5%8D%8E%E4%B8%BA%E6%93%8E%E4%BA%91G740%E7%94%A8%E6%88%B7%E6%8C%87%E5%8D%97-(KLVG-16Z,Windows11_02,zh-cn)/c28a751c315a89fb5f3b52736a7996b56971c9a260a0e2b850eb5ef18beabf3c.jpg",
-            # 这是一个直接指向图片的URL（虽然少见，但用于测试提取）
-            "content": "如果机器无法加热，请检查保险丝是否熔断..."
-        },
-        {
-            "chunk_id": "local_102",
-            "source": "local",
-            "title": "安全注意事项",
-            "score": 0.82,
-            "url": None,
-            "content": "操作时请务必佩戴隔热手套，避免高温烫伤。"
-        }
-    ]
-
-    # 模拟历史记录
-    mock_history = [
-        {"role": "user", "text": "你好，这款机器怎么用？"},
-        {"role": "assistant", "text": "您好！请问您具体指的是哪一款机器？"},
-        {"role": "user", "text": "HAK 180 烫金机"}
-    ]
-
-    # 模拟输入状态
-    mock_state = {
-        "session_id": "test_answer_session_001",
-        "original_query": "HAK 180 烫金机怎么操作？",
-        "rewritten_query": "HAK 180 烫金机的具体操作步骤和面板设置方法",
-        "item_names": ["HAK180烫金机"],
-        "history": mock_history,
-        "reranked_docs": mock_reranked_docs,
-        "is_stream": False,  # 测试非流式
-        # "is_stream": True, # 若要测试流式，需确保 SSE 环境或 mock 相关函数
-        "answer": None  # 初始无答案
-    }
-
-    # 运行节点
-    node_answer_output = NodeAnswerOutput()
-    result = node_answer_output(mock_state)
-
-    print(result)
