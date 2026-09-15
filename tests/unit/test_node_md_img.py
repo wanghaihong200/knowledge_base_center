@@ -54,3 +54,12 @@ def test_vlm_failure_uses_fallback_summary(md_env, mocks):
     fake_llm.invoke.side_effect = RuntimeError("VLM 挂了")
     state = NodeMDImg().process({"md_path": md_path, "md_content": content})
     assert "![图片描述](http://localhost:9000" in state["md_content"]
+
+
+def test_sanitize_summary():
+    sanitize = NodeMDImg._sanitize_summary
+    assert sanitize("**面板指示灯说明**") == "面板指示灯说明"
+    assert sanitize("第一行标题\n第二行解释") == "第一行标题"
+    assert sanitize("```代码块```") == "代码块"
+    assert sanitize("超" * 40) == "超" * 30, "超长摘要应截断到 30 字"
+    assert sanitize("   ") == "图片描述"

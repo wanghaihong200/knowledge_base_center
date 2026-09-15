@@ -121,12 +121,13 @@ class NodeMDImg(BaseNode):
         request_times.append(time.time())
 
     def _summarize_image(self, ref: dict) -> str:
-        """VLM 按图片内容 + MD 上下文生成简短中文摘要（base64 内联）"""
+        """VLM 按图片内容 + MD 上下文生成简短中文标题（base64 内联）"""
         root_folder = Path(ref["path"]).parent.parent.stem
         prompt = (
             f'这是"{root_folder}"文件中的一张图片，'
             f'图片上文部分为"{ref["before"]}"，下文部分为"{ref["after"]}"，'
-            "请用中文简要总结这张图片的内容，用于 Markdown 图片标题。"
+            "请为这张图片起一个中文标题。只输出标题本身，不超过15个字，"
+            "不要任何解释、引号、标点符号或格式。"
         )
         try:
             image_b64 = base64.b64encode(Path(ref["path"]).read_bytes()).decode("utf-8")
@@ -139,10 +140,17 @@ class NodeMDImg(BaseNode):
             ])
             llm = get_llm_client(model=lm_config.vl_model)
             summary = (llm.invoke([message]).content or "").strip()
-            return summary or "图片描述"
+            return self._sanitize_summary(summary)
         except Exception as e:
             self.logger.warning(f"图片摘要生成失败（{ref['name']}），使用兜底文案: {e}")
             return "图片描述"
+
+    @staticmethod
+    def _sanitize_summary(summary: str) -> str:
+        """摘要净化：取首行、去格式残留、限长——alt 文本必须单行，否则破坏 MD 图片语法"""
+        line = summary.splitlines()[0].strip() if summary.strip() else ""
+        line = line.strip("*#`\"'“”‘’[]【】。．")
+        return line[:30] or "图片描述"
 
     def _step_4_upload_and_replace(self, md_content: str, image_refs: list,
                                    summaries: list, doc_stem: str) -> str:

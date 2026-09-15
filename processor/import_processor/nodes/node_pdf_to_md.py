@@ -132,6 +132,16 @@ class NodePDFToMD(BaseNode):
             )
         md_path = output_dir / f"{file_stem}.md"
         shutil.move(str(source_md), str(md_path))
+
+        # 同步迁移 images 目录（md 内以相对路径 images/... 引用图片，
+        # node_md_img 依赖「md 同级 images/」的布局）
+        source_images = source_md.parent / "images"
+        if source_images.exists():
+            target_images = output_dir / "images"
+            if target_images.exists():
+                shutil.rmtree(target_images)
+            shutil.move(str(source_images), str(target_images))
+
         return md_path, md_path.read_text(encoding="utf-8")
 
     @staticmethod

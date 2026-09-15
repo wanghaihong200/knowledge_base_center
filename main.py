@@ -1,9 +1,19 @@
 """掌柜智库统一入口：python main.py import|query|all"""
 import argparse
 import multiprocessing
+import sys
+
+
+def _setup_console() -> None:
+    """Windows 中文控制台为 GBK，手册中的 © 等字符会使 print 抛
+    UnicodeEncodeError 炸掉节点流程；统一将标准流切到 UTF-8 并容错。"""
+    for stream in (sys.stdout, sys.stderr):
+        if stream is not None and hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="replace")
 
 
 def _run(service: str) -> None:
+    _setup_console()
     if service == "import":
         from web.api.import_service import app
 

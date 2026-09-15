@@ -36,7 +36,10 @@ def rerank_documents(query: str, documents: List[str]) -> List[float]:
             return [0.0] * len(documents)
 
         scores = [0.0] * len(documents)
-        for item in resp.json().get("data", []):
+        payload = resp.json()
+        # 智谱返回 {"results": [...]}, 兼容 Jina/dashscope 风格的 {"data": [...]}
+        items = payload.get("results") or payload.get("data") or []
+        for item in items:
             idx = item.get("index")
             if isinstance(idx, int) and 0 <= idx < len(documents):
                 scores[idx] = float(item.get("relevance_score", 0.0))

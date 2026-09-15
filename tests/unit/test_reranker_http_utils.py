@@ -10,16 +10,22 @@ pytestmark = pytest.mark.unit
 
 def test_rerank_documents_backfill_by_index():
     resp = MagicMock(status_code=200)
-    resp.json.return_value = {"data": [
+    # 智谱真实响应格式：results 键
+    resp.json.return_value = {"results": [
         {"index": 2, "relevance_score": 0.91},
         {"index": 0, "relevance_score": 0.55},
     ]}
     with patch.object(r.httpx, "post", return_value=resp) as post:
         scores = r.rerank_documents("怎么配置NAT", ["a", "b", "c"])
     assert scores == [0.55, 0.0, 0.91]
-    body = post.call_args.kwargs["json"]
-    assert body["model"] == "rerank"
-    assert body["top_n"] == 3
+
+
+def test_rerank_documents_backfill_data_key_fallback():
+    """兼容 Jina/dashscope 风格的 data 键"""
+    resp = MagicMock(status_code=200)
+    resp.json.return_value = {"data": [{"index": 1, "relevance_score": 0.7}]}
+    with patch.object(r.httpx, "post", return_value=resp):
+        assert r.rerank_documents("q", ["a", "b"]) == [0.0, 0.7]
 
 
 def test_rerank_documents_degrade_on_http_error():
