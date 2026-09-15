@@ -1,0 +1,4 @@
+/.env
+# Milvus/etcd/minio 数据卷(docker compose 启动时生成,体积大且为二进制)
+docker/volumes/
+/doc/origin_doc/
