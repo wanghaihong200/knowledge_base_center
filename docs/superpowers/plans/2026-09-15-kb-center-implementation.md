@@ -133,7 +133,7 @@ reranker_config: RerankerConfig  # RERANK_API_BASE/OPENAI_API_KEY/TEXT_RERANK_MO
 #   embedding_dim 默认 "1024"；embedding_batch_size=8（智谱批量上限）；删 minio_img_dir 无关项不加
 ```
 
-- [ ] **Step 1: 写失败测试** `tests/unit/test_config.py`
+- [x] **Step 1: 写失败测试** `tests/unit/test_config.py`
 ```python
 import pytest
 from config.lm_config import lm_config
@@ -165,8 +165,8 @@ def test_import_config_singleton():
     assert get_config().max_content_length == 2000
     assert get_config().embedding_dim == 1024
 ```
-- [ ] **Step 2**: `pytest tests/unit/test_config.py -v` → 预期 FAIL（模块不存在）
-- [ ] **Step 3**: 实现 7 个 config 文件 + 迁移 ImportConfig（模板统一如下，字段值取自 Interfaces 与 .env.example；每个文件形如）
+- [x] **Step 2**: `pytest tests/unit/test_config.py -v` → 预期 FAIL（模块不存在）
+- [x] **Step 3**: 实现 7 个 config 文件 + 迁移 ImportConfig（模板统一如下，字段值取自 Interfaces 与 .env.example；每个文件形如）
 ```python
 """LLM 服务配置"""
 from dataclasses import dataclass
@@ -192,8 +192,8 @@ from processor.import_processor.exceptions import ImportProcessError
 from utils.task_utils import add_running_task, add_done_task
 ```
   `task_utils.py` 映射：`"node_bge_embedding": "向量生成",` → `"node_embedding": "向量生成",`
-- [ ] **Step 4**: `.env`/`.env.example` 对齐（已完成于 2026-09-15，执行时核对即可）：`EMBEDDING_API_BASE/RERANK_API_BASE=https://open.bigmodel.cn/api/paas/v4`、`EMBEDDING_DIM=1024`、`EMBEDDING_MODEL=embedding-3`、`TEXT_RERANK_MODEL=rerank`、`DATA_BASED_ROOT_DIR=./data`、`MINIO_IMG_DIR=upload-images`；BGE/MODELSCOPE 段已删除
-- [ ] **Step 5**: 重写 `requirements.txt`（UTF-8，保留现 venv 已装版本，新增未装项）：
+- [x] **Step 4**: `.env`/`.env.example` 对齐（已完成于 2026-09-15，执行时核对即可）：`EMBEDDING_API_BASE/RERANK_API_BASE=https://open.bigmodel.cn/api/paas/v4`、`EMBEDDING_DIM=1024`、`EMBEDDING_MODEL=embedding-3`、`TEXT_RERANK_MODEL=rerank`、`DATA_BASED_ROOT_DIR=./data`、`MINIO_IMG_DIR=upload-images`；BGE/MODELSCOPE 段已删除
+- [x] **Step 5**: 重写 `requirements.txt`（UTF-8，保留现 venv 已装版本，新增未装项）：
 ```
 annotated-doc==0.0.5
 annotated-types==0.8.0
@@ -223,8 +223,8 @@ tiktoken==0.14.0
 uvicorn[standard]>=0.30.0
 ```
   执行 `.venv/Scripts/python -m pip install -r requirements.txt`（openai-agents/pymilvus/colorlog/uvicorn/pytest/httpx 等会新装；注意 GitHub 不通不影响 pip 默认源）。
-- [ ] **Step 6**: `pytest tests/unit/test_config.py -v` → PASS
-- [ ] **Step 7**:
+- [x] **Step 6**: `pytest tests/unit/test_config.py -v` → PASS
+- [x] **Step 7**:
 ```bash
 git add -A && git commit -m "feat: 配置层拆分为服务级 dataclass 单例,ImportConfig 迁入导入流程,依赖清单重写"
 ```
@@ -301,7 +301,7 @@ index_params.add_index("dense_vector", index_type="AUTOINDEX", metric_type="COSI
 ```
 **kb_item_names schema**：`pk INT64 pk`、`file_title VARCHAR 100`、`item_name VARCHAR 100`、`dense_vector FLOAT_VECTOR dim`；索引同上。
 
-- [ ] **Step 1: 写失败测试**（unit：mock 外部；integration：真服务）
+- [x] **Step 1: 写失败测试**（unit：mock 外部；integration：真服务）
 ```python
 # tests/unit/test_milvus_utils.py
 import pytest
@@ -373,10 +373,10 @@ def pytest_collection_modifyitems(config, items):
             if mark.markname in item.keywords:
                 item.add_marker(pytest.mark.skip(reason=reason))
 ```
-- [ ] **Step 2**: `pytest tests/unit -m unit -v` → embedding/milvus 用例 FAIL（模块不存在）
-- [ ] **Step 3**: 按笔记 09/10/12/17/18 + 上方 Interfaces 实现 7 个 util（注意三处与笔记的差异：① embedding 走智谱 OpenAI 兼容 `/embeddings`、返回纯 `list[list[float]]`；② milvus 用 `vector_search` 替代 `create_hybrid_search_requests`+`hybrid_search`；③ reranker 用 httpx POST 智谱 `paas/v4/rerank` 端点，非 dashscope SDK/本地 BGE）
-- [ ] **Step 4**: `pytest tests/unit -m unit -v` → PASS；`docker/` 下 `docker compose up -d` 后 `pytest tests/integration -m integration -v` → PASS
-- [ ] **Step 5**:
+- [x] **Step 2**: `pytest tests/unit -m unit -v` → embedding/milvus 用例 FAIL（模块不存在）
+- [x] **Step 3**: 按笔记 09/10/12/17/18 + 上方 Interfaces 实现 7 个 util（注意三处与笔记的差异：① embedding 走智谱 OpenAI 兼容 `/embeddings`、返回纯 `list[list[float]]`；② milvus 用 `vector_search` 替代 `create_hybrid_search_requests`+`hybrid_search`；③ reranker 用 httpx POST 智谱 `paas/v4/rerank` 端点，非 dashscope SDK/本地 BGE）
+- [x] **Step 4**: `pytest tests/unit -m unit -v` → PASS；`docker/` 下 `docker compose up -d` 后 `pytest tests/integration -m integration -v` → PASS
+- [x] **Step 5**:
 ```bash
 git add -A && git commit -m "feat: utils 工具层——LLM/Embedding(API)/Milvus(纯稠密)/MinIO/Mongo历史/Rerank/JSON"
 ```
@@ -408,7 +408,7 @@ chunk = {"title": str, "content": str, "parent_title": str, "part": int,
 | NodeImportMilvus | 10 | `_step_1` 提取 `vector_dimension=len(chunks[0]["dense_vector"])`；`ensure_collection`；按 file_title 幂等删旧；insert 后回填 `chunk_id=str(id)` |
 | KBImportWorkflow | 03 | `StateGraph(ImportGraphState)`；`route_after_entry` 按 is_pdf_read_enabled/is_md_read_enabled 条件路由；`run(state, stream=False)` stream 时 `self.graph.stream(state, stream_mode="values")` |
 
-- [ ] **Step 1: 写失败测试**——核心纯逻辑（文档切片）必须真实覆盖；其余节点以 mock 数据驱动单节点
+- [x] **Step 1: 写失败测试**——核心纯逻辑（文档切片）必须真实覆盖；其余节点以 mock 数据驱动单节点
 ```python
 # tests/unit/test_node_document_split.py（节选，完整用例：标题切分/无标题/超长二切/短块合并/代码块边界）
 import pytest
@@ -457,10 +457,10 @@ def test_unsupported_extension(tmp_path):
     with pytest.raises(Exception):
         NodeEntry().process({"import_file_path": str(f)})
 ```
-- [ ] **Step 2**: `pytest tests/unit -k "node_entry or document_split" -v` → FAIL
-- [ ] **Step 3**: 逐节点实现（顺序：entry → document_split → embedding → import_milvus → item_name_recognition → pdf_to_md → md_img → main_graph）。每节点代码以对应笔记为实现底本，套用差异表。每个 API 类节点（pdf_to_md/md_img/item_name_recognition）在类内做依赖注入友好的小函数拆分，测试用 `unittest.mock.patch` 打在 `utils.*` 入口上
-- [ ] **Step 4**: `pytest tests/unit -m unit -v` → 全 PASS；新增用例（mock MinerU 上传轮询、mock VLM+MinIO 的图片替换、mock embedding 的回填断言、mock milvus 的 insert/幂等删除断言、`KBImportWorkflow.build_graph` 的路由断言——MD 文件走 node_md_img 直达、其他类型 END）
-- [ ] **Step 5**:
+- [x] **Step 2**: `pytest tests/unit -k "node_entry or document_split" -v` → FAIL
+- [x] **Step 3**: 逐节点实现（顺序：entry → document_split → embedding → import_milvus → item_name_recognition → pdf_to_md → md_img → main_graph）。每节点代码以对应笔记为实现底本，套用差异表。每个 API 类节点（pdf_to_md/md_img/item_name_recognition）在类内做依赖注入友好的小函数拆分，测试用 `unittest.mock.patch` 打在 `utils.*` 入口上
+- [x] **Step 4**: `pytest tests/unit -m unit -v` → 全 PASS；新增用例（mock MinerU 上传轮询、mock VLM+MinIO 的图片替换、mock embedding 的回填断言、mock milvus 的 insert/幂等删除断言、`KBImportWorkflow.build_graph` 的路由断言——MD 文件走 node_md_img 直达、其他类型 END）
+- [x] **Step 5**:
 ```bash
 git add -A && git commit -m "feat: 导入流水线 7 节点与 LangGraph 编排(纯稠密向量适配)"
 ```
@@ -566,7 +566,7 @@ ANSWER_PROMPT = """你是企业设备知识库助手。请严格依据【参考�
 {question}"""
 ```
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 ```python
 # tests/unit/test_node_rrf.py
 import pytest
@@ -594,10 +594,10 @@ def test_cliff_cutoff():
 def test_rerank_degrade_on_zero_scores():
     # rerank_documents 返回全0 → 按原序保留前5，不抛异常
 ```
-- [ ] **Step 2**: FAIL 确认
-- [ ] **Step 3**: 实现基类/state/prompts/7 节点/main_graph（按差异表 + 笔记底本）；迁移并修正 `g_node_answer_output.py`（`git mv` 或新建+删除）
-- [ ] **Step 4**: `pytest tests/unit -m unit -v` → 全 PASS
-- [ ] **Step 5**:
+- [x] **Step 2**: FAIL 确认
+- [x] **Step 3**: 实现基类/state/prompts/7 节点/main_graph（按差异表 + 笔记底本）；迁移并修正 `g_node_answer_output.py`（`git mv` 或新建+删除）
+- [x] **Step 4**: `pytest tests/unit -m unit -v` → 全 PASS
+- [x] **Step 5**:
 ```bash
 git add -A && git commit -m "feat: 检索流水线 7 节点、V2 并发路由、提示词与答案输出归位"
 ```
@@ -642,8 +642,8 @@ def main():
 if __name__ == "__main__":
     main()
 ```
-- [ ] **Step 1**: 两个 service 的 import 现在全部可解析（`config.minio_config`、`utils.minio_utils`、`KBImportWorkflow`、`KBQueryWorkflow`、`utils.mongo_history_utils`）；`KBImportWorkflow`/`KBQueryWorkflowV2` 以 `KBQueryWorkflow = KBQueryWorkflowV2` 别名导出保持 query_service 不改逻辑。逐个 `python -c "import web.api.import_service"` 验证
-- [ ] **Step 2**:
+- [x] **Step 1**: 两个 service 的 import 现在全部可解析（`config.minio_config`、`utils.minio_utils`、`KBImportWorkflow`、`KBQueryWorkflow`、`utils.mongo_history_utils`）；`KBImportWorkflow`/`KBQueryWorkflowV2` 以 `KBQueryWorkflow = KBQueryWorkflowV2` 别名导出保持 query_service 不改逻辑。逐个 `python -c "import web.api.import_service"` 验证
+- [x] **Step 2**:
 ```python
 # tests/e2e/test_health.py
 import httpx, pytest
@@ -653,8 +653,8 @@ def test_import_health():
     assert httpx.get("http://127.0.0.1:8000/health" if False else "http://127.0.0.1:8000/docs").status_code == 200
 ```
   （注：import 服务无 /health，用 /docs；query 服务有 /health——补一个 `test_query_health` 打 `http://127.0.0.1:8001/health` 断言 `{"ok": true}`）
-- [ ] **Step 3**: `python main.py all` 后运行 e2e health → PASS；Ctrl+C 干净退出（multiprocessing join）
-- [ ] **Step 4**:
+- [x] **Step 3**: `python main.py all` 后运行 e2e health → PASS；Ctrl+C 干净退出（multiprocessing join）
+- [x] **Step 4**:
 ```bash
 git add -A && git commit -m "feat: Web层导入对齐与统一启动入口 main.py(import|query|all)"
 ```
@@ -666,11 +666,11 @@ git add -A && git commit -m "feat: Web层导入对齐与统一启动入口 main.
 **Files:**
 - Test: `tests/integration/test_import_pipeline.py`（真实 MinerU API + 全链路导入一份小 MD/PDF）、`tests/e2e/test_import_api.py`（httpx 上传→轮询 status→completed）、`tests/e2e/test_query_api.py`（POST /query 非流式→answer；流式 EventSource→delta/final）
 
-- [ ] **Step 1**: e2e import 测试用 `httpx` multipart 上传 `tmp_path` 生成的小 MD 文件（不依赖 MinerU），轮询 `/status/{task_id}` 至 completed（超时 120s），断言 done_list 含全部节点中文名
-- [ ] **Step 2**: e2e query 测试：先直连 Milvus 灌入一条测试 chunk（fixture），`POST /query {"query":"...","is_stream":false}` → `answer` 非空；流式用 `httpx.stream("GET", "/stream/{sid}")` 断言收到 `event: delta` 与 `event: final`（final 含 image_urls 字段）
-- [ ] **Step 3**: integration 全链路：真实上传一份 5 页以内 PDF 走完 MinerU→Milvus（标记 `@pytest.mark.integration`，MinerU token 缺失则 skip）
-- [ ] **Step 4**: `pytest -m "unit or integration or e2e"` 全绿；生成覆盖率报告 `pytest --cov=processor --cov=utils --cov-report=term`，核心逻辑（split/rrf/rerank/confirm）行覆盖 ≥80%
-- [ ] **Step 5**:
+- [x] **Step 1**: e2e import 测试用 `httpx` multipart 上传 `tmp_path` 生成的小 MD 文件（不依赖 MinerU），轮询 `/status/{task_id}` 至 completed（超时 120s），断言 done_list 含全部节点中文名
+- [x] **Step 2**: e2e query 测试：先直连 Milvus 灌入一条测试 chunk（fixture），`POST /query {"query":"...","is_stream":false}` → `answer` 非空；流式用 `httpx.stream("GET", "/stream/{sid}")` 断言收到 `event: delta` 与 `event: final`（final 含 image_urls 字段）
+- [x] **Step 3**: integration 全链路：真实上传一份 5 页以内 PDF 走完 MinerU→Milvus（标记 `@pytest.mark.integration`，MinerU token 缺失则 skip）
+- [x] **Step 4**: `pytest -m "unit or integration or e2e"` 全绿；生成覆盖率报告 `pytest --cov=processor --cov=utils --cov-report=term`，核心逻辑（split/rrf/rerank/confirm）行覆盖 ≥80%
+- [x] **Step 5**:
 ```bash
 git add -A && git commit -m "test: 集成与 E2E 测试套件(导入/查询/SSE流式/MinerU全链路)"
 ```
@@ -683,11 +683,11 @@ git add -A && git commit -m "test: 集成与 E2E 测试套件(导入/查询/SSE�
 - Modify: `docker/README.md` 无需动；Create: `README.md`（快速启动：docker compose up → pip install → python main.py all → 页面地址）
 - 验收脚本执行（非测试代码，逐项人工/半自动验证）
 
-- [ ] **Step 1**: `docker compose up -d` 五服务健康；`python main.py all`
-- [ ] **Step 2**: 浏览器 `http://127.0.0.1:8000/import.html` 上传 `H3C ER2100企业级路由器 用户手册-6W104-整本手册.pdf` → 轮询进度全部绿色 → Attu(localhost:7000) 中确认 `kb_chunks`/`kb_item_names` 有数据
-- [ ] **Step 3**: `http://127.0.0.1:8001/chat.html` 提问「H3C ER2100 的默认管理地址是多少」→ 断言：流式打字输出、答案引用手册内容、`【图片】`/image_urls 有图、MongoDB chat_message 有 user+assistant 记录；再问「它怎么配置 NAT」验证多轮指代消解（rewritten_query 独立完整）
-- [ ] **Step 4**: 提一个不存在的产品（「苹果手机怎么拆机」）→ 应得到主体确认失败的话术而不是编造。注意：`web_search_prime` MCP 账号配额至 2026-10-02 前耗尽，网络搜索结果为空属**预期降级**，观察日志出现降级 warning 而非流程失败
-- [ ] **Step 5**:
+- [x] **Step 1**: `docker compose up -d` 五服务健康；`python main.py all`
+- [x] **Step 2**: 浏览器 `http://127.0.0.1:8000/import.html` 上传 `H3C ER2100企业级路由器 用户手册-6W104-整本手册.pdf` → 轮询进度全部绿色 → Attu(localhost:7000) 中确认 `kb_chunks`/`kb_item_names` 有数据
+- [x] **Step 3**: `http://127.0.0.1:8001/chat.html` 提问「H3C ER2100 的默认管理地址是多少」→ 断言：流式打字输出、答案引用手册内容、`【图片】`/image_urls 有图、MongoDB chat_message 有 user+assistant 记录；再问「它怎么配置 NAT」验证多轮指代消解（rewritten_query 独立完整）
+- [x] **Step 4**: 提一个不存在的产品（「苹果手机怎么拆机」）→ 应得到主体确认失败的话术而不是编造。注意：`web_search_prime` MCP 账号配额至 2026-10-02 前耗尽，网络搜索结果为空属**预期降级**，观察日志出现降级 warning 而非流程失败
+- [x] **Step 5**:
 ```bash
 git add -A && git commit -m "docs: README 快速启动指南,端到端验收记录"
 ```
