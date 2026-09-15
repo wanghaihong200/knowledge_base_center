@@ -27,7 +27,8 @@ def get_llm_client(model: Optional[str] = None, json_mode: bool = False) -> Chat
         api_key=lm_config.api_key,
         base_url=lm_config.base_url,
         temperature=lm_config.llm_temperature,
-        extra_body={"enable_thinking": False},
+        # 注：笔记为 qwen 设计的 extra_body={"enable_thinking": False} 在智谱
+        # glm-5.3-flash 上会报错 1210（该模型始终思考，不支持关闭），故不传
     )
     if json_mode:
         kwargs["model_kwargs"] = {"response_format": {"type": "json_object"}}

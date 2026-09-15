@@ -73,7 +73,12 @@ class NodeItemNameRecognition(BaseNode):
                     file_title=file_title, context=context)),
             ])
             # 仅清洗首尾空白；主体名内部的空格（如 "H3C ER2100"）属于名称的一部分
-            name = (response.content or "").strip()
+            content = (response.content or "").strip()
+            name = content.splitlines()[0].strip() if content else ""
+            # 超长输出视为无效（LLM 附带了说明文本），回退文件标题
+            if len(name) > 50:
+                self.log_step("识别结果超长，视为无效", name[:50])
+                return file_title
             return name or file_title
         except Exception as e:
             self.logger.warning(f"主体识别 LLM 调用失败，兜底文件标题: {e}")

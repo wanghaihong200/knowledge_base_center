@@ -88,7 +88,7 @@ def run_graph_task(task_id: str, file_dir: str, import_file_path: str):
     except Exception as e:
         # 5. 捕获全流程异常，更新任务全局状态为：失败，并记录错误日志（含堆栈）
         update_task_status(task_id, "failed")
-        print(f"[{task_id}] LangGraph全流程执行失败，异常信息：{str(e)}", exc_info=True)
+        print(f"[{task_id}] LangGraph全流程执行失败，异常信息：{str(e)}")
 
 
 # 5. 核心接口：文件上传接口
@@ -155,7 +155,7 @@ async def upload_files(background_tasks: BackgroundTasks, files: List[UploadFile
             print(f"[{task_id}] 文件已成功上传至MinIO，桶名：{minio_bucket_name}，对象名：{minio_object_name}")
         except Exception as e:
             # MinIO上传失败，记录警告日志（不中断后续流程，本地文件仍可继续处理）
-            print(f"[{task_id}] 文件上传MinIO失败，将继续执行本地处理流程，异常信息：{str(e)}", exc_info=True)
+            print(f"[{task_id}] 文件上传MinIO失败，将继续执行本地处理流程，异常信息：{str(e)}")
 
         # 7. 标记「文件上传」阶段为「已完成」，前端轮询可查
         add_done_task(task_id, "upload_file")

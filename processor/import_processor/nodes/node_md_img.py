@@ -59,11 +59,18 @@ class NodeMDImg(BaseNode):
 
     def _step_1_get_content(self, state: dict):
         md_path = state.get("md_path")
-        md_content = state.get("md_content")
         if not md_path:
             raise StateFieldError(node_name=self.name, field_name="md_path", expected_type=str)
-        if md_content is None:
-            raise StateFieldError(node_name=self.name, field_name="md_content", expected_type=str)
+        md_content = state.get("md_content")
+        if not md_content:
+            # MD 直传分支：entry 节点只设置了 md_path，此处读取文件内容
+            path = Path(md_path)
+            if not path.exists():
+                raise StateFieldError(
+                    node_name=self.name, field_name="md_path",
+                    message=f"MD 文件不存在: {md_path}",
+                )
+            md_content = path.read_text(encoding="utf-8")
         return md_path, md_content
 
     def _step_2_scan_images(self, md_content: str, images_dir: Path) -> list:

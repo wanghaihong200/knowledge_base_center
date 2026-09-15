@@ -1,5 +1,6 @@
 """PDF转Markdown节点：MinerU 云 API（申请链接→上传→轮询→下载解压）"""
 import shutil
+import subprocess
 import time
 import zipfile
 from pathlib import Path
@@ -114,13 +115,8 @@ class NodePDFToMD(BaseNode):
 
     def _step_3_download_and_extract(self, full_zip_url: str, output_dir: Path, file_stem: str):
         """下载结果 zip → 清理解压目录 → 解压 → full.md 重命名为 {stem}.md 并读取"""
-        try:
-            zip_bytes = requests.get(full_zip_url, timeout=120).content
-        except Exception as e:
-            raise PdfConversionError(f"下载解析结果失败: {e}", node_name=self.name, cause=e)
-
         zip_path = output_dir / f"{file_stem}_result.zip"
-        zip_path.write_bytes(zip_bytes)
+        self._download_zip(full_zip_url, zip_path)
 
         extract_dir = output_dir / file_stem
         if extract_dir.exists():
@@ -145,3 +141,28 @@ class NodePDFToMD(BaseNode):
             if path.is_file():
                 return path
         return None
+
+    def _download_zip(self, url: str, dest: Path) -> None:
+        """
+        下载结果 zip。
+
+        注：cdn-mineru.openxlab.org.cn 对 Python OpenSSL 的 TLS 握手有干扰
+        （SSLEOFError，系统 curl/Schannel 可正常下载），故 Python 请求失败时
+        回退到系统 curl。
+        """
+        try:
+            resp = requests.get(url, timeout=120)
+            resp.raise_for_status()
+            dest.write_bytes(resp.content)
+            return
+        except (requests.exceptions.SSLError, requests.exceptions.ConnectionError) as e:
+            self.log_step("Python 下载失败，回退 curl", f"{type(e).__name__}: {str(e)[:120]}")
+
+        result = subprocess.run(
+            ["curl", "-sSL", "--max-time", "180", "-o", str(dest), url],
+            capture_output=True,
+            timeout=200,
+        )
+        if result.returncode != 0 or not dest.exists() or dest.stat().st_size == 0:
+            stderr = result.stderr.decode(errors="replace")[:200]
+            raise PdfConversionError(f"下载解析结果失败（curl 回退也失败）: {stderr}", node_name=self.name)
