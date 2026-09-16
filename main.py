@@ -1,4 +1,4 @@
-"""掌柜智库统一入口：python main.py import|query|all"""
+"""测试知识库统一入口：python main.py import|query|all"""
 import argparse
 import multiprocessing
 import sys

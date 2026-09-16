@@ -14,6 +14,7 @@ upload → node_entry ─┬─ PDF → node_pdf_to_md   node_item_name_confirm�
                      │  (VLM+MinIO)                  ├ node_search_embedding（向量+主体过滤）
                      ↓                               ├ node_search_embedding_hyde（HyDE）
               node_document_split                    └ node_web_search_mcp（失败自动降级）
+                                                 ├─ api文档获取，直接从MinIO读取(未实现)
                      ↓                           ↓
         node_item_name_recognition          node_rrf → node_rerank（断崖截断）
                      ↓                           ↓
