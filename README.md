@@ -14,7 +14,7 @@ upload → node_entry ─┬─ PDF → node_pdf_to_md   node_item_name_confirm�
                      │  (VLM+MinIO)                  ├ node_search_embedding（向量+主体过滤）
                      ↓                               ├ node_search_embedding_hyde（HyDE）
               node_document_split                    └ node_web_search_mcp（失败自动降级）
-                                                 ├─ api文档获取，直接从MinIO读取(未实现)
+                                                 ├─ api文档获取，直接从MinIO读取（待实现）
                      ↓                           ↓
         node_item_name_recognition          node_rrf → node_rerank（断崖截断）
                      ↓                           ↓
@@ -72,15 +72,15 @@ START → node_item_name_confirm ─┬─ answer 已有（反问/拒绝）→ n
 
 ### 节点实现流程
 
-| 节点 | 实现流程与关键技术点 |
-|------|---------------------|
+| 节点 | 实现流程与关键技术点                                                                                                                                                                                                                                                                                                              |
+|------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `node_item_name_confirm` | 8 步：校验参数 → 读 MongoDB 最近 10 条历史 → 存本轮 user 消息 → **LLM JSON 模式**提取主体并做指代消解（清理 ```` ```json ```` 包裹，失败兜底原问题）→ 主体向量化查 `kb_item_names` → **对齐三分支**：相似度 >0.85 确认为库内规范名并回溯回填历史消息；0.6~0.85 取前 3 作候选反问"您是想问哪个产品"；全低则拒绝。空答案 = 放行检索 |
-| `node_search_embedding` | 改写后问题向量化 → 拼接 `item_name in [...]` 过滤表达式（无主体则全库）→ 纯稠密检索 limit=10 → 每条补 `source=local/url=None` 供后续合并 |
-| `node_search_embedding_hyde` | LLM 按 HYDE_PROMPT 生成 ≤300 字"专家回答范文" → `原问题 + 范文` 拼接向量化再检索——用答案的形态去匹配文档，弥合问句与正文的表述差异。范文生成失败退化为普通检索 |
-| `node_web_search_mcp` | openai-agents `MCPServerStreamableHttp` 连智谱 `web_search_prime` MCP（Bearer 鉴权，10s 超时，3 次重试）→ `call_tool("web_search_prime", {"search_query": ...})` → 兼容解析多种响应键（`search_result`/`results`/`pages`）。**任何异常（含配额 429）→ 记日志返回空，流程继续** |
-| `node_rrf` | 只融合两路向量结果（网络结果在 rerank 才并入）。公式 `score(d) = Σ weight/(k + rank)`，k=60；两路命中同一 chunk 分数叠加自然置顶；保留首见文档数据 |
-| `node_rerank` | 合并本地切片（`rrf_chunks`）与网络结果（`web_search_docs`）为统一结构 → 智谱 rerank API 打分（响应键 `results`，兼容 `data`；**全 0 分视为 API 不可用，降级保留原序**）→ **断崖截断**：相邻分数绝对差 ≥0.5 或相对差 ≥0.25 处切掉低相关尾部（保留下限 3、上限 10） |
-| `node_answer_output` | 已有 answer（反问/拒绝）直通；否则构建提示词（参考内容带字符预算 12000，元数据标签 `[source][chunk_id][score]` 便于引用溯源）→ LLM 生成（流式逐 delta 推 SSE）→ **图片双保险**：前端展示的 `image_urls` 由代码从参考内容正则提取，不信任 LLM 输出 → 写 MongoDB 历史 → 推 `final` 事件 |
+| `node_search_embedding` | 改写后问题向量化 → 拼接 `item_name in [...]` 过滤表达式（无主体则全库）→ 纯稠密检索 limit=10 → 每条补 `source=local/url=None` 供后续合并                                                                                                                                                                                          |
+| `node_search_embedding_hyde` | LLM 按 HYDE_PROMPT 生成 ≤300 字"专家回答范文" → `原问题 + 范文` 拼接向量化再检索——用答案的形态去匹配文档，弥合问句与正文的表述差异。范文生成失败退化为普通检索                                                                                                                                                                    |
+| `node_web_search_mcp` | openai-agents `MCPServerStreamableHttp` 连智谱 `web_search_prime` MCP（Bearer 鉴权，10s 超时，3 次重试）→ `call_tool("web_search_prime", {"search_query": ...})` → 兼容解析多种响应键（`search_result`/`results`/`pages`）。**任何异常（含配额 429）→ 记日志返回空，流程继续**                                                    |
+| `node_rrf` | 只融合两路向量结果（网络结果在 rerank 才并入）。公式 `score(d) = Σ weight/(k + rank)`，k=60；两路命中同一 chunk 分数叠加自然置顶；保留首见文档数据<br/>**NodeRrf 用倒数排名融合算法，把纯向量和 HyDE 两路检索结果按 chunk_id 去重、分数累加、重新排序，产出一份更干净、更准确的候选集交给下游精排**                               |
+| `node_rerank` | 合并本地切片（`rrf_chunks`）与网络结果（`web_search_docs`）为统一结构 → 智谱 rerank API 打分（响应键 `results`，兼容 `data`；**全 0 分视为 API 不可用，降级保留原序**）→ **断崖截断**：相邻分数绝对差 ≥0.5 或相对差 ≥0.25 处切掉低相关尾部（保留下限 3、上限 10）                                                                 |
+| `node_answer_output` | 已有 answer（反问/拒绝）直通；否则构建提示词（参考内容带字符预算 12000，元数据标签 `[source][chunk_id][score]` 便于引用溯源）→ LLM 生成（流式逐 delta 推 SSE）→ **图片双保险**：前端展示的 `image_urls` 由代码从参考内容正则提取，不信任 LLM 输出 → 写 MongoDB 历史 → 推 `final` 事件                                             |
 
 ### 支撑机制
 
